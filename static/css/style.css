@@ -39,10 +39,15 @@
 }
 
 .inputs {
+    position: absolute;
+    bottom: 10px;
     padding: 10px;
     display:flex;
-
+    width: 80%;
+    height: 15%;
+    left: 9.3vw;  
 }
+
 h2{
     text-align: center;
 }
