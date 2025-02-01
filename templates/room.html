@@ -1,18 +1,89 @@
-{% extends 'base.html' %}{% block content %}
-<div class = "message-box">
-    <h2>Chat Room: {{room}}</h2>
-<div class = "messages" id = "messages"></div>
-<div class = "inputs">
-    <input type="text" rows = "3" placeholder="Message" name="message" id="message"/>
-    <button type="button" name="send" id="send-btn" onclick="sendMessage()">
-        Send
+{% extends 'base.html' %} {% block content %}
+<div class="message-box">
+  <h2>Chat Room: {{code}}</h2>
+  <div class="messages" id="messages"></div>
+  <div class="inputs">
+    <input
+      type="text"
+      rows="3"
+      placeholder="Message"
+      name="message"
+      id="message"
+    />
+    <input
+      type="file"
+      accept="audio/*"
+      name="audio"
+      id="audio"
+    />
+    <button type="button" name="send" id="send-btn" onClick="sendMessage()">
+      Send
     </button>
 </div>
 </div>
-<script type ="text/javascript">
-    var socketio = io();
-    const sendMessage = () => {
-        console.log("send");
+<script type="text/javascript">
+  var socketio = io();
+
+  const messages = document.getElementById("messages");
+
+  const createMessage = (name, msg, audio) => {
+    let content = `
+    <div class="text">
+        <span>
+            <strong>${name}</strong>: ${msg}
+        </span>
+        <span class="muted">
+            ${new Date().toLocaleString()}
+        </span>
+    </div>
+    `;
+
+    if (audio) {
+        content += `
+        <div class="audio">
+            <audio controls>
+                <source src="/uploads/${audio}" type="audio/wav">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+        `;
+    }
+
+    messages.innerHTML += content;
+};
+
+socketio.on("message", (data) => {
+    createMessage(data.name, data.message, data.audio);
+});
+
+  const sendMessage = () => {
+    const messageInput = document.getElementById("message");
+    const audioInput = document.getElementById("audio");
+    const message = messageInput.value;
+    const audioFile = audioInput.files[0];
+
+    if (message === "" && !audioFile) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        const audioData = reader.result;
+        socketio.emit("message", { message: message, audio: audioData });
+        
+        // Clear the inputs
+        messageInput.value = "";
+        audioInput.value = "";
     };
+
+    if (audioFile) {
+        reader.readAsDataURL(audioFile);
+    } else {
+        socketio.emit("message", { message: message, audio: null });
+        messageInput.value = "";
+    }
+};
 </script>
-{% endblock %}
+{% for msg in messages %}
+<script type="text/javascript">
+  createMessage("{{msg.name}}", "{{msg.message}}");
+</script>
+{% endfor %} {% endblock %}
